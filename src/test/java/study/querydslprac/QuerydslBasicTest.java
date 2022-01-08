@@ -2,6 +2,9 @@ package study.querydslprac;
 
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.dsl.CaseBuilder;
+import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +24,7 @@ import javax.transaction.Transactional;
 
 import java.util.List;
 
+import static com.querydsl.jpa.JPAExpressions.*;
 import static org.assertj.core.api.Assertions.*;
 import static study.querydslprac.entity.QMember.*;
 import static study.querydslprac.entity.QTeam.*;
@@ -343,5 +347,130 @@ public class QuerydslBasicTest {
         boolean loaded = emf.getPersistenceUnitUtil().isLoaded(member1.getTeam());
 
         assertThat(loaded).as("패치 조인 적용").isTrue();
+    }
+
+
+    /**
+     * 나이가 가장 많은 회원 조회
+     */
+    @Test
+    public void subQuery() {
+
+        //서브쿼리시 alias가 겹치기 때문에 Q멤버를 하나 더 정의해주기
+        QMember memberSub = new QMember("memberSub");
+
+        List<Member> result = queryFactory
+                .selectFrom(member)
+                .where(member.age.eq( //where절에서 서브쿼리 삽입
+                        select(memberSub.age.max())
+                                .from(memberSub)
+                ))
+                .fetch();
+        assertThat(result).extracting("age").containsExactly(40);
+    }
+    /**
+     * 나이가 평균 이상인 회원
+     */
+    @Test
+    public void subQueryGoe(){
+
+        QMember memberSub = new QMember("memberSub");
+
+        List<Member> result = queryFactory
+                .selectFrom(member)
+                .where(member.age.goe(
+                        select(memberSub.age.avg())
+                                .from(memberSub)
+                ))
+                .fetch();
+
+        result.forEach(System.out::println);
+        assertThat(result).extracting("age").containsExactly(30,40);
+    }
+
+    /**
+     * 서브쿼리시 in 사용 예제
+     */
+
+    @Test
+    public void subQueryIn(){
+        QMember memberSub = new QMember("memberSub");
+
+        List<Member> result = queryFactory
+                .selectFrom(member)
+                .where(member.age.in(
+                        select(memberSub.age)
+                                .from(memberSub)
+                                .where(memberSub.age.gt(10))
+                ))
+                .fetch();
+
+        assertThat(result).extracting("age").containsExactly(20,30,40);
+    }
+
+    @Test
+    public void selectSubquery(){
+        QMember memberSub = new QMember("memberSub");
+
+        List<Tuple> result = queryFactory
+                .select(member.username,
+                        //JPAExpressions static import처리
+                        select(memberSub.age.avg())
+                                .from(memberSub))
+                .from(member)
+                .fetch();
+
+        result.forEach(System.out::println);
+    }
+
+    @Test
+    public void basicCase(){
+        List<String> result = queryFactory
+                .select(member.age
+                        .when(10).then("열살")
+                        .when(20).then("스무살")
+                        .otherwise("기타"))
+                .from(member)
+                .fetch();
+
+        result.forEach(System.out::println);
+    }
+
+    @Test
+    public void complexCase(){
+        List<String> result = queryFactory
+                .select(new CaseBuilder()
+                        .when(member.age.between(0, 20)).then("0~20살")
+                        .when(member.age.between(21, 30)).then("21살 ~ 30살")
+                        .otherwise("기타"))
+                .from(member)
+                .fetch();
+
+        result.forEach(System.out::println);
+    }
+
+    @Test
+    public void constant(){
+        List<Tuple> result = queryFactory
+                .select(member.username, Expressions.constant("A"))
+                .from(member)
+                .fetch();
+
+        result.forEach(System.out::println );
+    }
+
+    @Test
+    public void concat(){
+
+        //[username_age]의 형식으로 데이터 출력하고 싶음
+        //concat은 문자만 가능한데, 나이는 문자타입이 아닌 문제가 있음
+        //따라서 stringValue()메소드를 입력시켜 문자로 변환해서 적용해야함
+        List<String> fetch = queryFactory
+                .select(member.username.concat("_").concat(member.age.stringValue()))
+                .from(member)
+                .where(member.username.eq("member1"))
+                .fetch();
+
+        fetch.forEach(System.out::println);
     }
 }
