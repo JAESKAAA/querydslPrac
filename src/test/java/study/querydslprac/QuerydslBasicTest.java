@@ -660,4 +660,80 @@ public class QuerydslBasicTest {
     private BooleanExpression allEq(String usernameCond, Integer ageCond){
         return usernameEq(usernameCond).and(ageEq(ageCond));
     }
+
+    @Test
+    public void bulkUpdate() {
+        queryFactory
+                .update(member)
+                .set(member.username, "비회원")
+                .where(member.age.lt(28))
+                .execute();
+
+        //벌크연산 진행 하면 하기와 같이 플러시와 클리어를 해줘야 영속성 컨텍스트가 클리어되어 다시 DB값을 받아오게됨
+        em.flush();
+        em.clear();
+
+        List<Member> result = queryFactory
+                .selectFrom(member)
+                .fetch();
+
+        //비회원으로 바뀌지 않은 데이터가 출력됨 (DB에는 비회원으로 저장되어있음)
+        result.stream().forEach(s -> System.out.println("member = "+s));
+    }
+
+    @Test
+    public void bulkAdd(){
+
+        //UPDATE member SET age = age+?
+        queryFactory
+                .update(member)
+                .set(member.age, member.age.add(1)) //뺄셈은 없어서 그냥 -1을 더해주는 방향으로 생각하기
+                .execute();
+    }
+
+    @Test
+    public void bulkDelete(){
+
+        //DELETE FROM member WHERE age > 18
+        long count = queryFactory
+                .delete(member)
+                .where(member.age.gt(18))
+                .execute();
+    }
+
+    @Test
+    public void sqlFunction(){
+
+        //member에서 member라는 단어를 M으로 바꿔서 조회회
+       List<String> result = queryFactory
+                .select(Expressions.stringTemplate(
+                        "function('replace', {0},{1},{2})",
+                        member.username, "member", "M"))
+                .from(member)
+                .fetch();
+       result.stream().forEach(s -> System.out.println(s));
+    }
+
+    @Test
+    public void sqlFunciton2(){
+        List<String> result = queryFactory
+                .select(member.username)
+                .from(member)
+                .where(member.username.eq(
+                        Expressions.stringTemplate("function('lower', {0})", member.username)))
+                .fetch();
+
+        //상기 쿼리와 똑같은 기능
+        List<String> result2 = queryFactory
+                .select(member.username)
+                .from(member)
+                .where(member.username.eq(member.username.lower()))
+                .fetch();
+
+
+
+        result.stream().forEach(s -> System.out.println(s));
+        result2.stream().forEach(s -> System.out.println(s));
+
+    }
 }
