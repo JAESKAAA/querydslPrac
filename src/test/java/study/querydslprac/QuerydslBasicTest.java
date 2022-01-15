@@ -4,14 +4,12 @@ import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.ExpressionUtils;
-import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,21 +19,18 @@ import study.querydslprac.dto.QMemberDto;
 import study.querydslprac.dto.UserDto;
 import study.querydslprac.entity.Member;
 import study.querydslprac.entity.QMember;
-import study.querydslprac.entity.QTeam;
 import study.querydslprac.entity.Team;
 
-import javax.persistence.Entity;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceUnit;
 import javax.transaction.Transactional;
-
 import java.util.List;
 
-import static com.querydsl.jpa.JPAExpressions.*;
-import static org.assertj.core.api.Assertions.*;
-import static study.querydslprac.entity.QMember.*;
-import static study.querydslprac.entity.QTeam.*;
+import static com.querydsl.jpa.JPAExpressions.select;
+import static org.assertj.core.api.Assertions.assertThat;
+import static study.querydslprac.entity.QMember.member;
+import static study.querydslprac.entity.QTeam.team;
 
 @SpringBootTest
 @Transactional
@@ -678,7 +673,7 @@ public class QuerydslBasicTest {
                 .fetch();
 
         //비회원으로 바뀌지 않은 데이터가 출력됨 (DB에는 비회원으로 저장되어있음)
-        result.stream().forEach(s -> System.out.println("member = "+s));
+        result.forEach(s -> System.out.println("member = "+s));
     }
 
     @Test
@@ -711,7 +706,7 @@ public class QuerydslBasicTest {
                         member.username, "member", "M"))
                 .from(member)
                 .fetch();
-       result.stream().forEach(s -> System.out.println(s));
+       result.forEach(System.out::println);
     }
 
     @Test
@@ -732,8 +727,8 @@ public class QuerydslBasicTest {
 
 
 
-        result.stream().forEach(s -> System.out.println(s));
-        result2.stream().forEach(s -> System.out.println(s));
+        result.forEach(System.out::println);
+        result2.forEach(System.out::println);
 
     }
 }
