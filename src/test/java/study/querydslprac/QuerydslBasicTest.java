@@ -725,8 +725,6 @@ public class QuerydslBasicTest {
                 .where(member.username.eq(member.username.lower()))
                 .fetch();
 
-
-
         result.forEach(System.out::println);
         result2.forEach(System.out::println);
 
