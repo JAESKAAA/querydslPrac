@@ -18,7 +18,7 @@ public class Member {
     private String username;
     private int age;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
     @JoinColumn(name = "team_id")
     private Team team;
 
@@ -31,6 +31,7 @@ public class Member {
         this(username,age,null);
     }
 
+    @Builder
     public Member(String username, int age, Team team){
         this.username = username;
         this.age = age;
